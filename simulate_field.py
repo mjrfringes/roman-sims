@@ -71,7 +71,7 @@ TIER1_FILTERS = frozenset({'F106', 'F129', 'F146', 'F158', 'F184', 'F213'})
 TMASS_G_LIMIT = 16.0
 
 # Cumulative AB magnitude thresholds for per-SCA counts
-THRESHOLDS = [14, 15, 16, 17, 18, 19]
+THRESHOLDS = [14, 15, 16, 17, 18, 19, 20]
 
 # Default calibration directory (allsky_maps, sibling of roman-sims)
 _DEFAULT_CALIB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -508,11 +508,17 @@ def main():
     G_ab  = mag_g                                        + G_AB_OFFSET
     BP_ab = np.array(stars["phot_bp_mean_mag"])          + BP_AB_OFFSET
     RP_ab = np.array(stars["phot_rp_mean_mag"])          + RP_AB_OFFSET
-    Ks_ab = (np.array(stars["tmass_ks"]).astype(float)   + KS_AB_OFFSET
+    def _tmass_col(col):
+        arr = np.array(stars[col])
+        if hasattr(arr, 'filled'):
+            arr = arr.filled(np.nan)
+        return arr.astype(float)
+
+    Ks_ab = (_tmass_col("tmass_ks") + KS_AB_OFFSET
              if "tmass_ks" in stars.colnames else np.full(len(stars), np.nan))
-    J_ab  = (np.array(stars["tmass_j"]).astype(float)    + J_AB_OFFSET
+    J_ab  = (_tmass_col("tmass_j")  + J_AB_OFFSET
              if "tmass_j"  in stars.colnames else np.full(len(stars), np.nan))
-    H_ab  = (np.array(stars["tmass_h"]).astype(float)    + H_AB_OFFSET
+    H_ab  = (_tmass_col("tmass_h")  + H_AB_OFFSET
              if "tmass_h"  in stars.colnames else np.full(len(stars), np.nan))
 
     bands = {'G': G_ab, 'BP': BP_ab, 'RP': RP_ab,
@@ -714,11 +720,11 @@ def main():
     def _draw_summary_text(ax):
         ax.set_facecolor("#111111")
         ax.axis("off")
-        counts_18 = [s['n_lt_18'] for s in sca_stats]
+        counts_20 = [s['n_lt_20'] for s in sca_stats]
         lines = [
-            f"{OPTICAL_ELEMENT}(AB)<18 per SCA — min: {min(counts_18)}  "
-            f"max: {max(counts_18)}  mean: {np.mean(counts_18):.1f}  "
-            f"total: {sum(counts_18)}",
+            f"{OPTICAL_ELEMENT}(AB)<20 per SCA — min: {min(counts_20)}  "
+            f"max: {max(counts_20)}  mean: {np.mean(counts_20):.1f}  "
+            f"total: {sum(counts_20)}",
             f"Tier-1 ({calib['tmass_basis']}): {n_tier1}  "
             f"Tier-2 only: {n_tier2}"
             if calib['has_g2m'] and not args.gaia_only else
