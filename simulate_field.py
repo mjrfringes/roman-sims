@@ -280,7 +280,19 @@ Examples:
     p.add_argument("--calib-tag", default="hybrid", metavar="TAG",
                    help="Calibration file suffix (default: hybrid). "
                         "Loads gaia_{F}_calibration_{tag}.npz.")
-    return p.parse_args()
+    # argparse treats values starting with '-' (e.g. "-71:44:16") as flags;
+    # merge --ra/--dec with their value using '=' so negative coords are accepted.
+    argv = sys.argv[1:]
+    fixed = []
+    i = 0
+    while i < len(argv):
+        if argv[i] in ('--ra', '--dec') and i + 1 < len(argv) and argv[i + 1].startswith('-'):
+            fixed.append(f'{argv[i]}={argv[i + 1]}')
+            i += 2
+        else:
+            fixed.append(argv[i])
+            i += 1
+    return p.parse_args(fixed)
 
 
 # ---------------------------------------------------------------------------
